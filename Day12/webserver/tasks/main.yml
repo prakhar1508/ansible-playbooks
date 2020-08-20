@@ -1,0 +1,36 @@
+---
+# tasks file for webserver
+- name: install httpd package
+  package:
+     name: "httpd"
+     state: present
+  when: ansible_distribution == "RedHat"
+  register: x
+
+- name: document root directory
+  file:
+     state: directory
+     dest: "{{ dcdir }}"
+  register: dcdir_status
+
+- name: configure webserver
+  template:
+       src: templates/localconf.conf.j2
+       dest: /etc/httpd/conf.d/prakhar.conf
+  when: x.rc == 0
+  tags: webconf
+  notify: service httpd
+
+- name: copy web page from URL
+  get_url:
+      dest: "{{ dcdir }}"
+      url: "https://raw.githubusercontent.com/prakhar1508/devopsal2/master/web.html"
+  when: dcdir_status.failed == false
+  tags: webgit
+
+- name: start service for web
+  service:
+       name: "httpd"
+       state: started
+
+  
